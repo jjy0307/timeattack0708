@@ -1,4 +1,6 @@
+from venv import create
 from django.db import models
+from user.models import User
 
 
 class SkillSet(models.Model):
@@ -54,3 +56,12 @@ class BusinessArea(models.Model):
 
     class Meta:
         db_table = 'business_areas'
+
+
+class JobApplication(models.Model):
+    candidate = models.ForeignKey(User, verbose_name="지원자", on_delete=models.CASCADE)
+    jobpost = models.ForeignKey(JobPost, verbose_name="채용 공고",on_delete=models.CASCADE)
+    created_at = models.DateTimeField("지원일", auto_now_add=True)
+
+    class Meta:
+        db_table = 'job_applications'

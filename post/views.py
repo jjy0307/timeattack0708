@@ -6,10 +6,14 @@ from .models import (
     JobPostSkillSet,
     JobType,
     JobPost,
-    Company
+    Company,
+    JobApplication,
 )
-from .serializers import JobPostSerializer
+from .serializers import JobPostSerializer, JobApplicationSerializer
 from django.db.models.query_utils import Q
+
+from ta.permissions import IsCandidateUser
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class SkillView(APIView):
@@ -17,7 +21,7 @@ class SkillView(APIView):
 
     def get(self, request):
         skills = request.query_params.getlist('skills', '')
-        print("skills = ", end=""), print(skills) # ["mysql","python"]
+        print("skills = ", end=""), print(skills)  # ["mysql","python"]
 
         # job_skills = JobPostSkillSet.objects.filter(
         #     Q(skill_set__name='python') | Q(skill_set__name='mysql')
@@ -67,3 +71,26 @@ class JobView(APIView):
             return Response(status=status.HTTP_200_OK)
 
         return Response(job_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# 채용 지원 기능
+class ApplicationView(APIView):
+    permission_classes = [IsCandidateUser]
+
+    authentication_classes = [JWTAuthentication]
+
+    # 채원 지원
+    def post(self, request):
+        job_post_id = request.data.get('job_post', "")
+        user = request.user
+
+        job_post = JobPost.objects.filter(id=job_post_id)
+
+        if 0 < len(job_post):
+            job_post = job_post.first()
+        else:
+            return Response({"error": "job_post가 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        job_application = JobApplication.objects.create(candidate=user, jobpost=job_post)
+
+        return Response(JobApplicationSerializer(job_application).data, status=status.HTTP_200_OK)
